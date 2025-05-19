@@ -1,4 +1,4 @@
-import java.util.*;
+ import java.util.*;
 
 public class StudentResultManagementSystem {
     public static void main(String[] args) {
@@ -12,7 +12,7 @@ public class StudentResultManagementSystem {
 
         Student s2 = new Student(102, "Bob");
         s2.addSubject("Math", 55);
-        s2.addSubject("Science", 35);  // fail
+        s2.addSubject("Science", 35);
         s2.addSubject("English", 60);
 
         Student s3 = new Student(103, "Charlie");
@@ -26,19 +26,27 @@ public class StudentResultManagementSystem {
 
         Scanner sc = new Scanner(System.in);
         System.out.println("Welcome to Student Result Management System");
-        System.out.print("Enter your Student ID to login: ");
+        System.out.println("1. Admin Login");
+        System.out.println("2. Student Login");
+        System.out.print("Enter your choice: ");
 
-        if (sc.hasNextInt()) {
+        int choice = sc.nextInt();
+
+        if (choice == 1) {
+            system.adminPanel(sc);
+        } else if (choice == 2) {
+            System.out.print("Enter your Student ID to login: ");
             int id = sc.nextInt();
             system.login(id, sc);
         } else {
-            System.out.println("Invalid Student ID! Exiting...");
+            System.out.println("Invalid Choice! Exiting...");
         }
 
-        // sc.close(); // Optional, depending on use
+        sc.close();
     }
 }
 
+// ================== ResultSystem ==================
 class ResultSystem {
     Map<Integer, Student> students = new HashMap<>();
 
@@ -65,8 +73,8 @@ class ResultSystem {
             Student s = students.get(studentId);
             System.out.println("\nWelcome, " + s.name + "!");
 
-            int choice = -1;
-            while (choice != 0) {
+            int choice;
+            do {
                 System.out.println("\nMenu:");
                 System.out.println("1. Show Marks and Grades");
                 System.out.println("2. Check Pass/Fail");
@@ -76,14 +84,7 @@ class ResultSystem {
                 System.out.println("6. View Rank");
                 System.out.println("0. Logout");
                 System.out.print("Enter your choice: ");
-
-                if (sc.hasNextInt()) {
-                    choice = sc.nextInt();
-                } else {
-                    System.out.println("Invalid input! Please enter a number.");
-                    sc.next(); // Consume invalid input
-                    continue;
-                }
+                choice = sc.nextInt();
 
                 switch (choice) {
                     case 1 -> s.showMarksAndGrades();
@@ -98,13 +99,89 @@ class ResultSystem {
                     case 0 -> System.out.println("Logged out.");
                     default -> System.out.println("Invalid choice! Try again.");
                 }
-            }
+            } while (choice != 0);
         } else {
             System.out.println("Student ID not found!");
         }
     }
+
+    void adminPanel(Scanner sc) {
+        int choice;
+        do {
+            System.out.println("\n--- Admin Panel ---");
+            System.out.println("1. Add Student");
+            System.out.println("2. Edit Student Marks");
+            System.out.println("3. Delete Student");
+            System.out.println("4. View All Students");
+            System.out.println("5. Add Subject to Student");
+            System.out.println("6. Delete Subject from Student");
+            System.out.println("0. Logout");
+            System.out.print("Enter your choice: ");
+            choice = sc.nextInt();
+            sc.nextLine(); // consume newline
+
+            switch (choice) {
+                case 1 -> {
+                    System.out.print("Enter Student ID: ");
+                    int id = sc.nextInt();
+                    sc.nextLine();
+                    System.out.print("Enter Student Name: ");
+                    String name = sc.nextLine();
+                    addStudent(new Student(id, name));
+                    System.out.println("Student added successfully.");
+                }
+                case 2 -> {
+                    System.out.print("Enter Student ID: ");
+                    int id = sc.nextInt();
+                    sc.nextLine();
+                    if (students.containsKey(id)) {
+                        Student student = students.get(id);
+                        student.showMarksAndGrades();
+                        System.out.print("Enter Subject Name to Edit Marks: ");
+                        String subject = sc.nextLine();
+                        System.out.print("Enter New Marks: ");
+                        int marks = sc.nextInt();
+                        student.editSubjectMarks(subject, marks);
+                    } else {
+                        System.out.println("Student not found.");
+                    }
+                }
+                case 3 -> {
+                    System.out.print("Enter Student ID to Delete: ");
+                    int id = sc.nextInt();
+                    students.remove(id);
+                    System.out.println("Student deleted successfully.");
+                }
+                case 4 -> {
+                    System.out.println("\n--- All Students ---");
+                    students.values().forEach(Student::generateReport);
+                }
+                case 5 -> {
+                    System.out.print("Enter Student ID: ");
+                    int id = sc.nextInt();
+                    sc.nextLine();
+                    System.out.print("Enter Subject Name: ");
+                    String subject = sc.nextLine();
+                    System.out.print("Enter Marks: ");
+                    int marks = sc.nextInt();
+                    students.get(id).addSubject(subject, marks);
+                    System.out.println("Subject added successfully.");
+                }
+                case 6 -> {
+                    System.out.print("Enter Student ID: ");
+                    int id = sc.nextInt();
+                    sc.nextLine();
+                    System.out.print("Enter Subject Name to Delete: ");
+                    String subject = sc.nextLine();
+                    students.get(id).deleteSubject(subject);
+                    System.out.println("Subject deleted successfully.");
+                }
+            }
+        } while (choice != 0);
+    }
 }
 
+// ================== Student ==================
 class Student {
     int id;
     String name;
@@ -120,16 +197,35 @@ class Student {
         subjects.add(new Subject(subjectName, marks));
     }
 
-    void showMarksAndGrades() {
-        System.out.println("\nSubject-wise Marks and Grades:");
+    void editSubjectMarks(String subjectName, int marks) {
         for (Subject sub : subjects) {
-            System.out.println(sub.name + ": " + sub.marks + " Marks, Grade: " + sub.getGrade());
+            if (sub.name.equalsIgnoreCase(subjectName)) {
+                sub.marks = marks;
+                System.out.println("Marks updated.");
+                return;
+            }
+        }
+        System.out.println("Subject not found.");
+    }
+
+    void deleteSubject(String subjectName) {
+        boolean removed = subjects.removeIf(sub -> sub.name.equalsIgnoreCase(subjectName));
+        if (removed)
+            System.out.println("Subject removed.");
+        else
+            System.out.println("Subject not found.");
+    }
+
+    void showMarksAndGrades() {
+        System.out.println("\n--- Marks and Grades ---");
+        for (Subject sub : subjects) {
+            System.out.println(sub.name + ": " + sub.marks + " (" + sub.getGrade() + ")");
         }
     }
 
     boolean isPassed() {
         for (Subject sub : subjects) {
-            if (!sub.isPassed()) return false;
+            if (sub.marks < 40) return false;
         }
         return true;
     }
@@ -137,40 +233,38 @@ class Student {
     int subjectsYetToPass() {
         int count = 0;
         for (Subject sub : subjects) {
-            if (!sub.isPassed()) count++;
+            if (sub.marks < 40) count++;
         }
         return count;
     }
 
-    int getTotalMarks() {
-        int total = 0;
-        for (Subject sub : subjects) {
-            total += sub.marks;
-        }
-        return total;
-    }
-
     void generateReport() {
-        System.out.println("\n--- Performance Report for " + name + " ---");
+        System.out.println("\nStudent ID: " + id);
+        System.out.println("Name: " + name);
         showMarksAndGrades();
         System.out.println("Total Marks: " + getTotalMarks());
         System.out.println("Status: " + (isPassed() ? "Passed" : "Failed"));
-        int pending = subjectsYetToPass();
-        System.out.println("Subjects Yet to Pass: " + pending + (pending == 1 ? " subject" : " subjects"));
-        System.out.println("Recheck Applied: " + (appliedForRecheck ? "Yes" : "No"));
-        System.out.println("-------------------------------------------");
+        if (appliedForRecheck) {
+            System.out.println("Applied for Recheck: YES");
+        }
+        System.out.println("-------------------------");
     }
 
     void applyForRecheck() {
-        if (appliedForRecheck) {
-            System.out.println("You have already applied for recheck.");
-        } else {
+        if (!appliedForRecheck) {
             appliedForRecheck = true;
-            System.out.println("Recheck applied successfully!");
+            System.out.println("Recheck applied successfully.");
+        } else {
+            System.out.println("Recheck already applied.");
         }
+    }
+
+    int getTotalMarks() {
+        return subjects.stream().mapToInt(s -> s.marks).sum();
     }
 }
 
+// ================== Subject ==================
 class Subject {
     String name;
     int marks;
@@ -180,16 +274,13 @@ class Subject {
         this.marks = marks;
     }
 
-    char getGrade() {
-        if (marks >= 90) return 'A';
-        else if (marks >= 80) return 'B';
-        else if (marks >= 70) return 'C';
-        else if (marks >= 60) return 'D';
-        else if (marks >= 50) return 'E';
-        else return 'F';
-    }
-
-    boolean isPassed() {
-        return marks>=40;
+    String getGrade() {
+        if (marks >= 90) return "A+";
+        else if (marks >= 80) return "A";
+        else if (marks >= 70) return "B+";
+        else if (marks >= 60) return "B";
+        else if (marks >= 50) return "C";
+        else if (marks >= 40) return "D";
+        else return "F";
     }
 }
